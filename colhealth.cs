@@ -39,10 +39,10 @@ namespace ColHealth
             ServerApi.Hooks.GameUpdate.Register(this, OnUpdateEvent);
             TShockAPI.GetDataHandlers.PlayerUpdate += PlayerUpdate;
             colStarted = false;
-            Commands.ChatCommands.Add(new Command("tshock.colhealth", colStart, "colstart") {
+            Commands.ChatCommands.Add(new Command("colhealth", colStart, "colstart") {
                 HelpText = "Start a collective health hardcore survival challenge. Format: /colstart <Team1, Team2...>"
             });
-            Commands.ChatCommands.Add(new Command("tshock.colhealth", giveHearts, "ghearts", "gheart", "giveheart", "givehearts")
+            Commands.ChatCommands.Add(new Command("colhealth", giveHearts, "ghearts", "gheart", "giveheart", "givehearts")
             {
                 HelpText = "Gives every player 15 Life Crystals."
             });
@@ -50,7 +50,7 @@ namespace ColHealth
             {
                 HelpText = "Increases the HP."
             });*/
-            Commands.ChatCommands.Add(new Command("tshock.cancheckhp", checkHP, "checkhp", "checkhealth")
+            Commands.ChatCommands.Add(new Command("cancheckhp", checkHP, "checkhp", "checkhealth")
             {
                 HelpText = "Check the health. Format: /checkhp <Team1, Team2...> or /checkhp all"
             });
