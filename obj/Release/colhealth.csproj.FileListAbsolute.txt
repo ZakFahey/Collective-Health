@@ -1,0 +1,8 @@
+E:\Dropbox\TShock mods\Collective Health\obj\Release\colhealth.csprojResolveAssemblyReference.cache
+C:\Users\Zak\Desktop\build\Collective Health.dll
+C:\Users\Zak\Desktop\build\Collective Health.pdb
+E:\Dropbox\TShock mods\Collective Health\obj\Release\Collective Health.dll
+E:\Dropbox\TShock mods\Collective Health\obj\Release\Collective Health.pdb
+E:\TShock mods\Collective Health\obj\Release\colhealth.csprojResolveAssemblyReference.cache
+E:\TShock mods\Collective Health\obj\Release\Collective Health.dll
+E:\TShock mods\Collective Health\obj\Release\Collective Health.pdb
