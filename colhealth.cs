@@ -25,6 +25,7 @@ namespace ColHealth
         bool colStarted { get; set; }
         byte[] notifyCooldown { get; set; }
         Timer notify = new Timer();
+        Timer update = new Timer();
         Timer end = new Timer();
         List<string>[] playersAtFault = new List<string>[4];
         List<Person> highScore = new List<Person>();
@@ -33,7 +34,7 @@ namespace ColHealth
         }
 
         public override void Initialize() {
-            TShockAPI.GetDataHandlers.PlayerDamage += PlayerDamage;
+            //TShockAPI.GetDataHandlers.PlayerDamage += PlayerDamage;
             TShockAPI.GetDataHandlers.PlayerTeam += PlayerTeam;
             ServerApi.Hooks.NetGreetPlayer.Register(this, OnGreetPlayer);
             ServerApi.Hooks.GameUpdate.Register(this, OnUpdateEvent);
@@ -60,12 +61,15 @@ namespace ColHealth
             end.Elapsed += new ElapsedEventHandler(endTimer);
             end.Interval = 1000;
             end.AutoReset = false;
+            update.Elapsed += new ElapsedEventHandler(updateTimer);
+            update.Interval = 200;
+            update.AutoReset = true;
 
             if (!Config.ReadConfig())
                 Log.ConsoleError("Failed to read CreativeModeConfig.json. Consider generating a new config file.");
         }
         public override Version Version {
-            get { return new Version("1.0"); }
+            get { return new Version("1.0.1"); }
         }
         public override string Name {
             get { return "Collective Health"; }
@@ -94,43 +98,56 @@ namespace ColHealth
                         player.SendInfoMessage(String.Format("{0} attempted to switch teams.", TShock.Players[e.PlayerId].Name));
         }
 
-        void PlayerDamage(object sender, TShockAPI.GetDataHandlers.PlayerDamageEventArgs e) {
-            sbyte plrTm = Convert.ToSByte(TShock.Players[e.ID].Team - 1);
-            if (colStarted && plrTm != -1) {
-                totalHealth[plrTm] -= e.Damage;
-                if (endMsg == 0)
-                    foreach (Person score in highScore)
-                        if (score.name == TShock.Players[e.ID].Name) score.damage += e.Damage;
-                if (totalHealth[plrTm] <= 0) {
-                    totalHealth[plrTm] = 0;
-                    if (endMsg == 0) {
-                        killedTeam = plrTm;
-                        lastDmg[plrTm] = e.ID;
-                        end.Start();
-                    }
-                } else {
-                    TShock.Players[e.ID].Heal();
-                    if (!playersAtFault[plrTm].Contains(TShock.Players[e.ID].Name))
-                        playersAtFault[plrTm].Add(TShock.Players[e.ID].Name);
-                    byte totalPlayers = 1;
-                    foreach (TSPlayer player in TShock.Players)
-                        if (player != null && player.Active && !player.Dead && plrTm == player.Team - 1)
-                            totalPlayers++;
-                    if (notifyCooldown[plrTm] == 0 || totalHealth[plrTm] <= 40 * totalPlayers) {
-                        notifyCooldown[plrTm] = 20;
-                        StringBuilder sb = new StringBuilder();
-                        foreach (string nm in playersAtFault[plrTm]) {
-                            if (sb.ToString() != "") sb.Append(", ");
-                            sb.Append(nm);
+        /*void PlayerDamage(object sender, TShockAPI.GetDataHandlers.PlayerDamageEventArgs e) {
+            PlayerDmg();
+        }*/
+
+        private void updateTimer(object source, ElapsedEventArgs e) {
+            if (colStarted)
+                foreach (TSPlayer plr in TShock.Players)
+                    if (plr != null && plr.Active && !plr.Dead && plr.TPlayer.statLife < plr.TPlayer.statLifeMax) {
+                        //TSPlayer.All.SendData(PacketTypes.PlayerHp, "",
+                        //NetMessage.SendData((int)PacketTypes.Status, -1, -1, "Hey");
+                        int dmg = plr.TPlayer.statLifeMax - plr.TPlayer.statLife;
+                        sbyte plrTm = Convert.ToSByte(plr.Team - 1);
+                        if (plrTm != -1) {
+                            totalHealth[plrTm] -= dmg;
+                            if (endMsg == 0)
+                                foreach (Person score in highScore)
+                                    if (score.name == plr.Name) score.damage += dmg;
+                            if (totalHealth[plrTm] <= 0) {
+                                totalHealth[plrTm] = 0;
+                                if (endMsg == 0) {
+                                    killedTeam = plrTm;
+                                    lastDmg[plrTm] = plr.Index;
+                                    end.Start();
+                                }
+                            } else {
+                                if (!playersAtFault[plrTm].Contains(plr.Name))
+                                    playersAtFault[plrTm].Add(plr.Name);
+                                byte totalPlayers = 1;
+                                foreach (TSPlayer player in TShock.Players)
+                                    if (player != null && player.Active && !player.Dead && plrTm == player.Team - 1)
+                                    totalPlayers++;
+                                if (notifyCooldown[plrTm] == 0 || totalHealth[plrTm] <= 40 * totalPlayers) {
+                                    notifyCooldown[plrTm] = 20;
+                                    StringBuilder sb = new StringBuilder();
+                                    foreach (string nm in playersAtFault[plrTm]) {
+                                        if (sb.ToString() != "") sb.Append(", ");
+                                        sb.Append(nm);
+                                    }
+                                    foreach (TSPlayer player in TShock.Players)
+                                        if (player != null && player.Active && plrTm == player.Team - 1)
+                                            player.SendMessage(String.Format("Health: {0}  ({1}, {2})", totalHealth[plrTm], sb.ToString(), totalHealth[plrTm] - lastHealth[plrTm]), Main.teamColor[plrTm + 1].R, Main.teamColor[plrTm + 1].G, Main.teamColor[plrTm + 1].B);
+                                    lastHealth[plrTm] = totalHealth[plrTm];
+                                    playersAtFault[plrTm].Clear();
+                                }
+                                plr.Heal();
+                                plr.TPlayer.statLife = plr.TPlayer.statLifeMax;
+                                NetMessage.SendData(16, -1, -1, "", plr.Index, 0f, 0f, 0f, 0);
+                            }
                         }
-                        foreach (TSPlayer player in TShock.Players)
-                            if (player != null && player.Active && plrTm == player.Team - 1)
-                                player.SendMessage(String.Format("Health: {0}  ({1}, {2})", totalHealth[plrTm], sb.ToString(), totalHealth[plrTm] - lastHealth[plrTm]), Main.teamColor[plrTm + 1].R, Main.teamColor[plrTm + 1].G, Main.teamColor[plrTm + 1].B);
-                        lastHealth[plrTm] = totalHealth[plrTm];
-                        playersAtFault[plrTm].Clear();
                     }
-                }
-            }
         }
 
         void colStart(CommandArgs e) {
@@ -173,6 +190,7 @@ namespace ColHealth
                     lastDmg = new int[4];
                     notifyCooldown = new byte[4];
                     notify.Start();
+                    update.Start();
                     colStarted = true;
                     for (int i = 0; i < 4; i++) {
                         byte totalPlayers = 0;
@@ -273,8 +291,8 @@ namespace ColHealth
         void giveHearts(CommandArgs e) {
             var ITM = TShock.Utils.GetItemByIdOrName("life crystal")[0];
             foreach (TSPlayer player in TShock.Players)
-                if (player != null && player.Active && player.InventorySlotAvailable && !player.Dead)
-                    player.GiveItem(ITM.type, ITM.name, ITM.width, ITM.height, 15);
+                if (player != null && player.Active && player.InventorySlotAvailable && !player.Dead && player.FirstMaxHP < 400)
+                    player.GiveItem(ITM.type, ITM.name, ITM.width, ITM.height, (400 - player.FirstMaxHP) / 20);
         }
 
         private void endTimer(object source, ElapsedEventArgs e) {
@@ -334,8 +352,9 @@ namespace ColHealth
         }
 
         void PlayerUpdate(object sender, TShockAPI.GetDataHandlers.PlayerUpdateEventArgs e) {
-            if (TShock.Players[e.PlayerId].Team == 0 && colStarted)
-                TShock.Players[e.PlayerId].Teleport(Main.spawnTileX * 16, Main.spawnTileY * 16 - 48);
+            TSPlayer player = TShock.Players[e.PlayerId];
+            if (player.Team == 0 && colStarted)
+                player.Teleport(Main.spawnTileX * 16, Main.spawnTileY * 16 - 48);
         }
 
         string acceptedTeams(bool deleteDeadTeams) {
