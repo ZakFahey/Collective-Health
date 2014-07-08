@@ -69,7 +69,7 @@ namespace ColHealth
                 Log.ConsoleError("Failed to read CreativeModeConfig.json. Consider generating a new config file.");
         }
         public override Version Version {
-            get { return new Version("1.0.1"); }
+            get { return new Version("1.0.2"); }
         }
         public override string Name {
             get { return "Collective Health"; }
