@@ -66,10 +66,10 @@ namespace ColHealth
             update.AutoReset = true;
 
             if (!Config.ReadConfig())
-                Log.ConsoleError("Failed to read CreativeModeConfig.json. Consider generating a new config file.");
+                Log.ConsoleError("Failed to read ColHealthConfig.json. Consider generating a new config file.");
         }
         public override Version Version {
-            get { return new Version("1.0.2"); }
+            get { return new Version("1.0.3"); }
         }
         public override string Name {
             get { return "Collective Health"; }
