@@ -38,6 +38,7 @@ namespace ColHealth
             TShockAPI.GetDataHandlers.PlayerTeam += PlayerTeam;
             ServerApi.Hooks.NetGreetPlayer.Register(this, OnGreetPlayer);
             ServerApi.Hooks.GameUpdate.Register(this, OnUpdateEvent);
+            TShockAPI.Hooks.GeneralHooks.ReloadEvent += ReloadEvent;
             TShockAPI.GetDataHandlers.PlayerUpdate += PlayerUpdate;
             colStarted = false;
             Commands.ChatCommands.Add(new Command("colhealth.admin.start", colStart, "colstart") {
@@ -55,6 +56,10 @@ namespace ColHealth
             {
                 HelpText = "Check the health. Format: /checkhp <Team1, Team2...> or /checkhp all"
             });
+
+            if (!Config.ReadConfig())
+                Log.ConsoleError("Failed to read ColHealthConfig.json. Consider generating a new config file.");
+
             notify.Elapsed += new ElapsedEventHandler(notifyTimer);
             notify.Interval = 20;
             notify.AutoReset = true;
@@ -62,14 +67,11 @@ namespace ColHealth
             end.Interval = 1000;
             end.AutoReset = false;
             update.Elapsed += new ElapsedEventHandler(updateTimer);
-            update.Interval = 200;
+            update.Interval = Config.contents.UpdateInterval;
             update.AutoReset = true;
-
-            if (!Config.ReadConfig())
-                Log.ConsoleError("Failed to read ColHealthConfig.json. Consider generating a new config file.");
         }
         public override Version Version {
-            get { return new Version("1.0.3"); }
+            get { return new Version("1.0.4"); }
         }
         public override string Name {
             get { return "Collective Health"; }
@@ -96,6 +98,12 @@ namespace ColHealth
                 foreach (TSPlayer player in TShock.Players)
                     if (player != null && player.Active && player.Group.ToString() == "superadmin")
                         player.SendInfoMessage(String.Format("{0} attempted to switch teams.", TShock.Players[e.PlayerId].Name));
+        }
+
+        void ReloadEvent(TShockAPI.Hooks.ReloadEventArgs e) {
+            if (!Config.ReadConfig())
+                Log.ConsoleError("Failed to read ColHealthConfig.json. Consider generating a new config file.");
+            update.Interval = Config.contents.UpdateInterval;
         }
 
         /*void PlayerDamage(object sender, TShockAPI.GetDataHandlers.PlayerDamageEventArgs e) {
@@ -205,7 +213,8 @@ namespace ColHealth
                             if (player != null && player.Active && !player.Dead && i == player.Team - 1)
                                 player.SendMessage(String.Format("The game is starting. You all have {0} health. If you change to an invalid team, you will immediately be killed.", totalHealth[i]), Color.Yellow);
                     }
-                    TShock.Config.DisableBuild = false;
+                    if (Config.contents.TurnOffAntibuildWhenStarting)
+                        TShock.Config.DisableBuild = false;
                     TSPlayer.Server.SetTime(true, 20000.0);
                 } else TSPlayer.All.SendErrorMessage(String.Format("Game cannot start until everyone is on {0} team. ({1})", acceptedTeams(false), badPlayers.ToString()));
             }

@@ -13,6 +13,8 @@ namespace ColHealth {
         public class Contents {
             public int HealthPerPerson = 250;
             public int HealthPerLifeCrystal = 200;
+            public bool TurnOffAntibuildWhenStarting = true;
+            public double UpdateInterval = 200;
         }
 
         public static void CreateConfig() {
