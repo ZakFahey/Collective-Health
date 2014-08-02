@@ -71,7 +71,7 @@ namespace ColHealth
             update.AutoReset = true;
         }
         public override Version Version {
-            get { return new Version("1.0.4"); }
+            get { return new Version("1.0.5"); }
         }
         public override string Name {
             get { return "Collective Health"; }
@@ -299,9 +299,14 @@ namespace ColHealth
 
         void giveHearts(CommandArgs e) {
             var ITM = TShock.Utils.GetItemByIdOrName("life crystal")[0];
+            var ITM2 = TShock.Utils.GetItemByIdOrName("life fruit")[0];
             foreach (TSPlayer player in TShock.Players)
-                if (player != null && player.Active && player.InventorySlotAvailable && !player.Dead && player.FirstMaxHP < 400)
-                    player.GiveItem(ITM.type, ITM.name, ITM.width, ITM.height, (400 - player.FirstMaxHP) / 20);
+                if (player != null && player.Active && !player.Dead) {
+                    if (player.InventorySlotAvailable && player.FirstMaxHP < 400)
+                        player.GiveItem(ITM.type, ITM.name, ITM.width, ITM.height, (400 - player.FirstMaxHP) / 20);
+                    if (player.InventorySlotAvailable && player.FirstMaxHP < 500)
+                        player.GiveItem(ITM2.type, ITM2.name, ITM2.width, ITM2.height, (100 - Math.Max(player.FirstMaxHP - 400, 0)) / 5);
+                }
         }
 
         private void endTimer(object source, ElapsedEventArgs e) {
